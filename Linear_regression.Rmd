@@ -1,0 +1,150 @@
+---
+title: "Linear_regression"
+author: "Matthew Chen, Jasper Tsai, Mark Faynboym"
+date: '2022-12-04'
+output: html_document
+---
+```{r}
+library(MASS)
+library(leaps)
+```
+
+```{r}
+# import data 
+df = read.csv('data/data_clean.csv')
+# remove location column
+df = df[-4]
+
+df
+```
+```{r}
+# change categorical variables to R Factors
+df$size = as.factor(df$size)
+df$python = as.factor(df$python)
+df$visual_software = as.factor(df$visual_software)
+df$ML_software = as.factor(df$ML_software)
+df$spark = as.factor(df$spark)
+df$aws = as.factor(df$aws)
+df$excel = as.factor(df$excel)
+df$sql = as.factor(df$sql)
+df$sas = as.factor(df$sas)
+df$hadoop = as.factor(df$hadoop)
+df$degree = as.factor(df$degree)
+df$in_CA = as.factor(df$in_CA)
+df$senior_status = as.factor(df$senior_status)
+```
+
+## Model 1: Linear model with all first order terms
+Here we have p=22 n=433 observations. We have R2=0.3865 and R2a=0.3552.
+```{r}
+model1 = lm(avg_salary_k~., data=df)
+summary(model1)
+```
+```{r}
+# Model diagnostics
+par(mfrow=c(2, 2))
+plot(model1)
+```
+In the model diagnostics, we find that residuals have no pattern, are centered about zero,
+and have no sign of heteroskedasticity. In the normal-QQ plot, we find that there
+are heavy right tails, though this may be caused by outliers in Y (we will examine these later).
+Overall, this model is reasonable.
+
+## Exploration of transformation in Y
+Since we have heavy tails in the residual distribution, we conduct the box-cox procedure
+to see if a transformation of the response variable would be beneficial.
+```{r}
+boxcox(model1, data=df)
+```
+The Box-Cox suggests a square root transformation of the data
+
+## Refit Model 1 using a square root transform in Y
+```{r}
+df_sqrtY = df
+df_sqrtY$avg_salary_k = sqrt(df$avg_salary_k)
+```
+
+```{r}
+model1_sqrt = lm(avg_salary_k~., data=df_sqrtY)
+summary(model1_sqrt)
+```
+```{r}
+# model diagnostics
+par(mfrow=c(2, 2))
+plot(model1_sqrt)
+```
+In the QQ plot we see that the distribution is much less heavy tailed than before, and
+R2 and R2a also remain mostly unchanged. Thus, these heavy tails may be caused by
+a handful of outliers in Y. For now, we continue exploring fitting models using
+the original Y.
+
+## Model 2: inclusion of all two-way interaction terms
+Since R2 is low in Model 1, we attempt to fit a second order model with all interaction terms
+in an attempt to gain a better fit of the data.
+```{r}
+# Second order interaction model
+model2 = lm(avg_salary_k~(.)^2, data=df)
+summary(model2)
+```
+Here we have p=211 regression coefficients. While the multiple R2 has increased significantly, the adjusted R2 has not 
+changed by much (due to the drastic decrease in DOF). However, we realize that most of the terms are not significant so we attempt to fit a smaller subset of model2 using stepwise regression.
+
+```{r}
+fit0 = lm(avg_salary_k~1, data=df)
+step.aic = stepAIC(fit0, scope=list(upper=model2, lower=fit0), trace=FALSE)
+step.aic$anova
+```
+
+```{r}
+# fit selected model
+model2_aic = lm(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
+    age + rating + sas + aws + ML_software + python:aws + age:sas + 
+    in_CA:ML_software + age:ML_software, data=df)
+summary(model2_aic)
+```
+```{r}
+# model diagnostics
+par(mfrow=c(2, 2))
+plot(model2_aic)
+```
+
+While adjusted R2 here is not much lower than the multiple R2, the difference compared to the first
+order model is minimal. The model diagnostics also do not improve much over
+Model 1. Especially since interaction terms are harder to interpret, we
+move forward with first order models. 
+
+## Subset of Model 1
+We also look into the possibility of subsetting Model1.
+
+```{r}
+fit0 = lm(avg_salary_k~1, data=df)
+step.aic = stepAIC(fit0, scope=list(upper=model1, lower=fit0), trace=FALSE)
+step.aic$anova
+```
+
+```{r}
+# fit the selected model
+model1_aic = lm(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
+    age + rating + sas + aws + ML_software, data=df)
+summary(model1_aic)
+```
+Since adjusted R2 barely changed (-0.006), we choose this smaller model as our
+final model based on the principle of parsimony. 
+
+```{r}
+# model diagnostics
+par(mfrow=c(2, 2))
+plot(model1_aic)
+```
+Model diagnostics remains similar compared to model 1. 
+
+## Analysis of Outliers
+In the residual plots above, we notice points that are potentially outlying in Y
+and are creating heavy tails in the residual distribution...
+
+## Refit the model after dealing with outliers
+
+## Conclusions
+
+
+
