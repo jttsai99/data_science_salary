@@ -281,6 +281,11 @@ summary = summary(model2_sqrt_aic_out)
 summary
 ```
 
+### Anova of model2_sqrt_aic_out
+```{r}
+anova(model2_sqrt_aic_out)
+```
+
 ### Model diagnostics
 ```{r}
 par(mfrow=c(2, 2))
@@ -301,7 +306,19 @@ Confidence_Intervals=round(cbind(Lower_Bound,Estimate,Upper_Bound),3)
 Confidence_Intervals
 ```
 
-## Calculate Pressp for final selected model model2_sqrt_aci_out
+### Confidence Intervals of Coefficients for model2_sqrt_aic_out
+```{r}
+x=1:length(Estimate)
+data=data.frame(x,Estimate)
+
+require(ggplot2)
+ggplot(data,aes(x=x, y=Estimate)) + geom_point() + geom_errorbar(aes(ymin = Lower_Bound, ymax = Upper_Bound)) + labs(title="Confidence Intervals of Coefficients",
+       x="Beta Coefficient", 
+       y="Value")
+```
+
+
+## Calculate Pressp for final selected model, model2_sqrt_aci_out
 ```{r}
 # Press P
 LOOCV = train(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
@@ -317,6 +334,8 @@ PressP
 SSE=summary(model2_sqrt_aic_out)$sigma^2*n
 SSE
 ```
+
+
 
 
 
