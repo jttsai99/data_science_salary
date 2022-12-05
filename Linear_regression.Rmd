@@ -317,12 +317,25 @@ model3_aic = lm(avg_salary_k ~ senior_status + in_CA + python + visual_software 
     sql + in_CA:ML_software + age:ML_software + python:aws + 
     rating:hadoop + visual_software:hadoop + python:hadoop + 
     sas:ML_software, data=df_out)
-summary(model3_aic)
+summary = summary(model3_aic)
+summary
 ```
 
 ### Model diagnostics
 ```{r}
 par(mfrow=c(2, 2))
 plot(model3_aic)
+```
+##Confidence Interval for model3_aic
+```{r}
+#Confidence Interval
+Estimate = summary$coefficients[,1]
+n=length(df_out$avg_salary_k)
+s=summary$coefficients[,2]
+margin = s*qt(0.975,df=n-2)
+Lower_Bound = Estimate-s
+Upper_Bound =Estimate+s
+Confidence_Intervals=round(cbind(Lower_Bound,Estimate,Upper_Bound),3)
+Confidence_Intervals
 ```
 
