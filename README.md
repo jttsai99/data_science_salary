@@ -20,10 +20,28 @@ Preprocess data and export data_clean.csv
 File consist of all exploratory data analysis figures and export them to figures folder.
 -Read in data_clean.csv\
 -The following plots were created:
- \begin{itemize}
-    \item Qualitative figures: scatterplot matrix, hist. of *avg_salary* and their transformed versions, boxplot for *avg_salary*
-    \item Another line with a 'sub bullet'.
-  \end{itemize}
+- Qualitative figures: scatterplot matrix, hist. of *avg_salary* and their transformed versions, boxplot for *avg_salary*
+- Quantitative figures: boxplots of company size, degree, in california, senior status, skills. pie chart of company size and degree.
+
+## Linear_regression.Rmd & Linear_regression.html
+Linear regression method steps:\
+1.) Fit first order model with full data and check model diagnostics. (suggested boxcox transformation on response variable)\
+2.) Refit first order model with sqrt(Y) full data. \
+3.) Use stepAIC to find a better reduced model.
+
+4.) Fit interaction model with full data and check model diagnostics. (suggested boxcox transformation on response variable)\
+5.) Refit interaction order model with sqrt(Y) full data. \
+6.) Use stepAIC to find a better reduced model.\
+7.) Compared AIC selected first order model and AIC selected interaction model (Proceed with AIC selected interaction model)\
+8.) Outlier analysis with selected model 
+- Identified outlying in Y (Bonferroni outlier test) but not influential via Cook's Distance.
+- Identified outlying in X (leverage) and removed influential cases via Cook's Distance. 
+
+9.) Refit AIC selected interaction model with data without influential outliers\
+10.) Calculate Press_p and confidence interval of the final model
+
+## logistic_regression.ipynb
+Logistic regression method for better predictions. 
 
 
 
