@@ -293,7 +293,7 @@ plot(model2_sqrt_aic_out)
 ```
 
 
-##Confidence Interval for model2_sqrt_aic_out
+## Confidence Interval for model2_sqrt_aic_out
 ```{r}
 #Confidence Interval
 Estimate = summary$coefficients[,1]
