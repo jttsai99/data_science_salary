@@ -326,7 +326,8 @@ summary
 par(mfrow=c(2, 2))
 plot(model3_aic)
 ```
-##Confidence Interval for model3_aic
+
+## Confidence Interval for model3_aic
 ```{r}
 #Confidence Interval
 Estimate = summary$coefficients[,1]
