@@ -2,21 +2,34 @@
 title: "Linear_regression"
 author: "Matthew Chen, Jasper Tsai, Mark Faynboym"
 date: '2022-12-04'
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
 ```{r}
 library(MASS)
 library(leaps)
 ```
 
+
 ```{r}
 # import data 
 df = read.csv('data/data_clean.csv')
-# remove location column
+# remove 'job_location' column
 df = df[-4]
 
-df
+head(df)
 ```
+
+
+
 ```{r}
 # change categorical variables to R Factors
 df$size = as.factor(df$size)
@@ -34,99 +47,63 @@ df$in_CA = as.factor(df$in_CA)
 df$senior_status = as.factor(df$senior_status)
 ```
 
-## Model 1: Linear model with all first order terms
+# No interaction
+## model1: Linear model with all first order terms
 Here we have p=22 n=433 observations. We have R2=0.3865 and R2a=0.3552.
 ```{r}
+#Fit First order model with full data
 model1 = lm(avg_salary_k~., data=df)
 summary(model1)
 ```
+
+
+
 ```{r}
 # Model diagnostics
 par(mfrow=c(2, 2))
 plot(model1)
 ```
+
+
 In the model diagnostics, we find that residuals have no pattern, are centered about zero,
 and have no sign of heteroskedasticity. In the normal-QQ plot, we find that there
 are heavy right tails, though this may be caused by outliers in Y (we will examine these later).
 Overall, this model is reasonable.
 
-## Exploration of transformation in Y
+### Exploration of transformation in Y with original full data with model1
 Since we have heavy tails in the residual distribution, we conduct the box-cox procedure
 to see if a transformation of the response variable would be beneficial.
 ```{r}
 boxcox(model1, data=df)
 ```
-The Box-Cox suggests a square root transformation of the data
 
-## Refit Model 1 using a square root transform in Y
+The Box-Cox suggests a square root transformation of the data\
+**we will continue to use SQRT(Y) data for rest of this section**
+
+## model1_sqrt: Refit model1 using a square root transform in Y
 ```{r}
+#create new dataset called df_sqrtY with sqrt(Y) as avg_salary_k
 df_sqrtY = df
 df_sqrtY$avg_salary_k = sqrt(df$avg_salary_k)
 ```
 
+Here we have p=22 n=433 observations. We have R2=0.3887 and R2a=0.3574.
 ```{r}
 model1_sqrt = lm(avg_salary_k~., data=df_sqrtY)
 summary(model1_sqrt)
 ```
+
 ```{r}
 # model diagnostics
 par(mfrow=c(2, 2))
 plot(model1_sqrt)
 ```
 In the QQ plot we see that the distribution is much less heavy tailed than before, and
-R2 and R2a also remain mostly unchanged. Thus, these heavy tails may be caused by
+R2 and R2a also remain mostly unchanged. Thus, these tails may be caused by
 a handful of outliers in Y. We continue using the square root transformation of our response variable.
 
-## Model 2: inclusion of all two-way interaction terms
-Since R2 is low in Model 1, we attempt to fit a second order model with all interaction terms
-in an attempt to gain a better fit of the data.
-
-
-```{r}
-# Second order interaction model
-model2 = lm(avg_salary_k~(.)^2, data=df)
-summary(model2)
-```
-```{r}
-boxcox(model2, data=df)
-```
-```{r}
-# Second order interaction model
-model2_sqrtY = lm(avg_salary_k~(.)^2, data=df_sqrtY)
-summary(model2_sqrtY)
-```
-
-Here we have p=211 regression coefficients. While the multiple R2 has increased significantly, the adjusted R2 has not 
-changed by much (due to the drastic decrease in degrees of freedom). However, we realize that most of the terms are not significant so we attempt to fit a smaller subset of model2 using stepwise regression.
-
-
-```{r}
-fit0 = lm(avg_salary_k~1, data=df_sqrtY)
-step.aic = stepAIC(fit0, scope=list(upper=model2_sqrtY, lower=fit0), trace=FALSE)
-step.aic$anova
-```
-
-```{r}
-# fit selected model
-model2_aic = lm(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
-    age + rating + sas + aws + ML_software + hadoop + sql + python:aws + 
-    in_CA:ML_software + age:ML_software + age:rating + python:rating + 
-    visual_software:hadoop + python:hadoop + sas:sql, data=df_sqrtY)
-summary(model2_aic)
-```
-```{r}
-# model diagnostics
-par(mfrow=c(2, 2))
-plot(model2_aic)
-```
-
-While adjusted R2 here is not much lower than the multiple R2, the difference compared to the first
-order model is minimal. The model diagnostics also do not improve much over
-Model 1. Especially since interaction terms are harder to interpret, we
-move forward with first order models. 
-
-## Subset of Model 1
-We also look into the possibility of subsetting Model1.
+## mordel1_sqrt_aic: AIC of model1_sqrt
+We want to use AIC to see if we can get a better model
 
 ```{r}
 fit0 = lm(avg_salary_k~1, data=df_sqrtY)
@@ -134,118 +111,218 @@ step.aic = stepAIC(fit0, scope=list(upper=model1_sqrt, lower=fit0), trace=FALSE)
 step.aic$anova
 ```
 
+### fit model1_sqrt_aic from aic criterion
+We have R2=0.3731 and R2a=0.3537.
+
 ```{r}
 # fit the selected model
-model1_aic = lm(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
+model1_sqrt_aic = lm(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
     age + rating + sas + aws + ML_software + excel + hadoop, data=df_sqrtY)
-summary(model1_aic)
+summary(model1_sqrt_aic)
 ```
-Since adjusted R2 barely changed (-0.006), we choose this smaller model as our
-final model based on the principle of parsimony. 
 
 ```{r}
 # model diagnostics
 par(mfrow=c(2, 2))
-plot(model1_aic)
+plot(model1_sqrt_aic)
 ```
-Model diagnostics remains similar compared to model 1. 
 
-## Analysis of Outliers
+The model is valid.
+
+
+
+# Interaction
+
+## model2: inclusion of all two-way interaction terms
+Since R2 is low in Model 1, we attempt to fit a second order model with all interaction terms
+in an attempt to gain a better fit of the data.
+
+p=211, n = 422. We have R2 = 0.6679, R2a = 0.3538
+```{r}
+# Second order interaction model
+model2 = lm(avg_salary_k~(.)^2, data=df)
+summary(model2)
+```
+
+```{r}
+# model diagnostics
+par(mfrow=c(2, 2))
+plot(model2)
+```
+
+In the model diagnostics, we find that residuals have no pattern, are centered about zero,
+and have no sign of heteroskedasticity. In the normal-QQ plot, we find that there
+are some right tails, though this may be caused by outliers in Y (we will examine these later).
+Overall, this model is reasonable.
+
+### Exploration of transformation in Y with original full data with model2
+Since we have tails in the residual distribution, we conduct the box-cox procedure
+to see if a transformation of the response variable would be beneficial.
+
+```{r}
+boxcox(model2, data=df)
+```
+
+The Box-Cox suggests a square root transformation of the data
+**we will continue to use SQRT(Y) data for rest of this section**
+
+## model2_sqrt: Refit model2 using a square root transform in Y
+We have R2 = 0.6571, R2a = 0.3328
+```{r}
+# Second order interaction model
+model2_sqrt = lm(avg_salary_k~(.)^2, data=df_sqrtY)
+summary(model2_sqrt)
+```
+
+```{r}
+# model diagnostics
+par(mfrow=c(2, 2))
+plot(model2_sqrt)
+```
+
+Here we have p=211 regression coefficients. While the multiple R2 has increased significantly, the adjusted R2 has not 
+changed by much (due to the drastic decrease in degrees of freedom). However, we realize that most of the terms are not significant so we attempt to fit a smaller subset of model2_sqrt using stepwise regression.
+
+
+
+
+## model2_sqrt_aic: AIC of model2_sqrt
+
+```{r}
+fit0 = lm(avg_salary_k~1, data=df_sqrtY)
+step.aic = stepAIC(fit0, scope=list(upper=model2_sqrt, lower=fit0), trace=FALSE)
+step.aic$anova
+```
+
+We have R2 = 0.4092, R2a = 0.3791
+```{r}
+# fit selected model
+model2_sqrt_aic = lm(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
+    age + rating + sas + aws + ML_software + hadoop + sql + python:aws + 
+    in_CA:ML_software + age:ML_software + age:rating + python:rating + 
+    visual_software:hadoop + python:hadoop + sas:sql, data=df_sqrtY)
+summary(model2_sqrt_aic)
+```
+
+```{r}
+# model diagnostics
+par(mfrow=c(2, 2))
+plot(model2_sqrt_aic)
+```
+
+The model is valid.
+
+
+
+
+# Analysis of Outliers
+**We will continue to do the rest of the outlier analysis with model2_sqrt_aic**
 In the residual plots above, we notice points that are potentially outlying in Y
 and are creating heavy tails in the residual distribution...
 
+## Bonferroni Outlier test (Outliers in Y)
 ```{r}
 #Bonferonni outlier test
-library(car)
-outlierTest(model1_aic,cutoff=0.05,nmax=15)
+require(car)
+# return 
+outlierTest(model2_sqrt_aic,cutoff=0.05,nmax=15)
 ```
 
 ```{r}
 #Cook's distance
 library(base)
-Cookvalue=4/(length(df$avg_salary_k*summary(model2_aic)$df[2])) #Cook's distance threshold model 2
-Cookvalue
-cooks.distance(model2_aic)[267] #Cook's distance for our outlier from the Bonferonni test
+Cookvalue=4/(length(df_sqrtY$avg_salary_k*summary(model2_sqrt_aic)$df[2])) #Cook's distance threshold model 2
+paste("Cook's distance value is :", Cookvalue)
 ```
 
 ```{r}
+cooks.distance(model2_sqrt_aic)[204] #Cook's distance for our outlier from the Bonferonni test
+```
+
+There is NO influential cases for outlying in Y
+
+
+## Leverage (Outliers in X)
+```{r}
 # check for points outlying in X
-leverage = influence(model2_aic)$hat # leverage values
-list=leverage[leverage > 2*length(model2_aic$coefficients)/length(model2_aic$residuals)] #outliers in X
+leverage = influence(model2_sqrt_aic)$hat # leverage values
+list=leverage[leverage > 2*length(model2_sqrt_aic$coefficients)/length(model2_sqrt_aic$residuals)] #outliers in X
 list
-Cooks_distances=cooks.distance(model2_aic)[attributes(list)$names] #none of the outliers in X are influential
+```
+
+```{r}
+#Cook's distance
+Cooks_distances=cooks.distance(model2_sqrt_aic)[attributes(list)$names] #
 High_influence_vars=Cooks_distances[Cooks_distances>Cookvalue]
 High_influence_vars
 ```
 
-We try to refit model1_aic after removing the outlier
+High influential cases from outlying in X are identified.
+
+
+
+## Remove outliers identified that are influential
+We try to refit model2_sqrt_aic after removing the outlier\
+new dataframe called **df_out** that uses df_sqrtY and remove outliers from that dataframe
 ```{r}
+# remove outliers from df_sqrtY and create new df_out
 df_out = df_sqrtY[-c(as.numeric(attributes(High_influence_vars)$names)), ]
 head(df_out)
 ```
-####
-## Model 1: Linear model with all first order terms
-Here we have p=22 n=432 observations. We have R2=0.3865 and R2a=0.3552.
-```{r}
-model1N = lm(avg_salary_k~., data=df_out)
-summary(model1N)
 
-# Model diagnostics
+## model2_sqrt_aic_out: Directly refit model2_sqrt_aic onto data without outliers
+p = 22, n = 424, R2 = 0.4117, R2a = 0.381
+```{r}
+model2_sqrt_aic_out = lm(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
+    age + rating + sas + aws + ML_software + hadoop + sql + python:aws + 
+    in_CA:ML_software + age:ML_software + age:rating + python:rating + 
+    visual_software:hadoop + python:hadoop + sas:sql, data = df_out)
+summary(model2_sqrt_aic_out)
+```
+
+### Model diagnostics
+```{r}
 par(mfrow=c(2, 2))
-plot(model1N)
+plot(model2_sqrt_aic_out)
 ```
-In the model diagnostics, we find that residuals have no pattern, are centered about zero,
-and have no sign of heteroskedasticity. In the normal-QQ plot, we find that there
-are heavy right tails, though this may be caused by outliers in Y (we will examine these later).
-Overall, this model is reasonable.
 
 
+
+## model3: refit model2_sqrt without outliers this time
+**p=210**, n = 424, R2= 0.6584, R2a= 0.3247
 ```{r}
-model1_sqrtN = lm(avg_salary_k~., data=df_out)
-summary(model1_sqrtN)
+model3 = lm(avg_salary_k~(.)^2, data = df_out)
+summary(model3)
 ```
+
+
+### Model diagnostics
 ```{r}
-# model diagnostics
 par(mfrow=c(2, 2))
-plot(model1_sqrtN)
-```
-In the QQ plot we see that the distribution is much less heavy tailed than before, and
-R2 and R2a also remain mostly unchanged. Thus, these heavy tails may be caused by
-a handful of outliers in Y. For now, we continue exploring fitting models using
-the original Y.
-
-## Model 2: inclusion of all two-way interaction terms
-Since R2 is low in Model 1, we attempt to fit a second order model with all interaction terms
-in an attempt to gain a better fit of the data.
-```{r}
-# Second order interaction model
-model2N = lm(avg_salary_k~(.)^2, data=df_out)
-summary(model2N)
-```
-Here we have p=211 regression coefficients. While the multiple R2 has increased significantly, the adjusted R2 has not 
-changed by much (due to the drastic decrease in degrees of freedom). However, we realize that most of the terms are not significant so we attempt to fit a smaller subset of model2 using stepwise regression.
-
-```{r}
-fit0N = lm(avg_salary_k~1, data=df_out)
-step.aicN = stepAIC(fit0N, scope=list(upper=model2N, lower=fit0N), trace=FALSE)
-step.aicN$anova
+plot(model3)
 ```
 
+## model3_aic: AIC of model3
 ```{r}
-# fit selected model
-model2_aicN = lm(avg_salary_k ~ senior_status + in_CA + python + visual_software + 
+fit0 = lm(avg_salary_k~1, data=df_out)
+step.aic = stepAIC(fit0, scope=list(upper=model3, lower=fit0), trace=FALSE)
+step.aic$anova
+```
+
+R2 = 0.4125, R2a = 0.3833
+
+```{r}
+model3_aic = lm(avg_salary_k ~ senior_status + in_CA + python + visual_software + 
     degree + rating + sas + age + ML_software + aws + hadoop + 
     sql + in_CA:ML_software + age:ML_software + python:aws + 
     rating:hadoop + visual_software:hadoop + python:hadoop + 
     sas:ML_software, data=df_out)
-summary(model2_aicN)
+summary(model3_aic)
 ```
+
+### Model diagnostics
 ```{r}
-# model diagnostics
 par(mfrow=c(2, 2))
-plot(model2_aicN)
+plot(model3_aic)
 ```
-
-
-
 
