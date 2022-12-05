@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```{r}
 library(MASS)
 library(leaps)
+library(caret)
 ```
 
 
@@ -303,7 +304,6 @@ Confidence_Intervals
 ## Calculate Pressp for final selected model model2_sqrt_aci_out
 ```{r}
 # Press P
-require(caret)
 LOOCV = train(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
     age + rating + sas + aws + ML_software + hadoop + sql + python:aws + 
     in_CA:ML_software + age:ML_software + age:rating + python:rating + 
