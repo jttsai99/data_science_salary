@@ -214,7 +214,6 @@ The model is valid.
 
 
 
-
 # Analysis of Outliers
 **We will continue to do the rest of the outlier analysis with model2_sqrt_aic**
 In the residual plots above, we notice points that are potentially outlying in Y
@@ -277,7 +276,8 @@ model2_sqrt_aic_out = lm(avg_salary_k ~ senior_status + in_CA + python + degree 
     age + rating + sas + aws + ML_software + hadoop + sql + python:aws + 
     in_CA:ML_software + age:ML_software + age:rating + python:rating + 
     visual_software:hadoop + python:hadoop + sas:sql, data = df_out)
-summary(model2_sqrt_aic_out)
+summary = summary(model2_sqrt_aic_out)
+summary
 ```
 
 ### Model diagnostics
@@ -287,46 +287,7 @@ plot(model2_sqrt_aic_out)
 ```
 
 
-
-## model3: refit model2_sqrt without outliers this time
-**p=210**, n = 424, R2= 0.6584, R2a= 0.3247
-```{r}
-model3 = lm(avg_salary_k~(.)^2, data = df_out)
-summary(model3)
-```
-
-
-### Model diagnostics
-```{r}
-par(mfrow=c(2, 2))
-plot(model3)
-```
-
-## model3_aic: AIC of model3
-```{r}
-fit0 = lm(avg_salary_k~1, data=df_out)
-step.aic = stepAIC(fit0, scope=list(upper=model3, lower=fit0), trace=FALSE)
-step.aic$anova
-```
-
-R2 = 0.4125, R2a = 0.3833
-
-```{r}
-model3_aic = lm(avg_salary_k ~ senior_status + in_CA + python + visual_software + 
-    degree + rating + sas + age + ML_software + aws + hadoop + 
-    sql + in_CA:ML_software + age:ML_software + python:aws + 
-    rating:hadoop + visual_software:hadoop + python:hadoop + 
-    sas:ML_software, data=df_out)
-summary = summary(model3_aic)
-summary
-```
-
-### Model diagnostics
-```{r}
-par(mfrow=c(2, 2))
-plot(model3_aic)
-```
-##Confidence Interval for model3_aic
+##Confidence Interval for model2_sqrt_aic_out
 ```{r}
 #Confidence Interval
 Estimate = summary$coefficients[,1]
@@ -338,4 +299,24 @@ Upper_Bound =Estimate+s
 Confidence_Intervals=round(cbind(Lower_Bound,Estimate,Upper_Bound),3)
 Confidence_Intervals
 ```
+
+## Calculate Pressp for final selected model model2_sqrt_aci_out
+```{r}
+# Press P
+require(caret)
+LOOCV = train(avg_salary_k ~ senior_status + in_CA + python + degree + visual_software + 
+    age + rating + sas + aws + ML_software + hadoop + sql + python:aws + 
+    in_CA:ML_software + age:ML_software + age:rating + python:rating + 
+    visual_software:hadoop + python:hadoop + sas:sql, data = df_out, method = "lm", trControl = trainControl(method = "LOOCV"))
+MSE_LOOCV=as.numeric(LOOCV$results[2]^2)
+PressP=MSE_LOOCV*n
+PressP
+```
+
+```{r}
+SSE=summary(model2_sqrt_aic_out)$sigma^2*n
+SSE
+```
+
+
 
